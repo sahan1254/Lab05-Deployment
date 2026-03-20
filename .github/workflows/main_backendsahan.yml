@@ -1,0 +1,63 @@
+name: Build and deploy ASP.Net Core app to Azure Web App - backendsahan
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET Core
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x' # Updated to match lab requirements
+
+      - name: Build with dotnet
+        run: dotnet build --configuration Release
+        working-directory: BackendAPI # Tells GitHub to look inside the folder
+
+      - name: dotnet publish
+        run: dotnet publish -c Release -o "${{env.DOTNET_ROOT}}/myapp"
+        working-directory: BackendAPI
+
+      - name: Upload artifact for deployment job
+        uses: actions/upload-artifact@v4
+        with:
+          name: .net-app
+          path: ${{env.DOTNET_ROOT}}/myapp
+
+  deploy:
+    runs-on: windows-latest
+    needs: build
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v4
+        with:
+          name: .net-app
+      
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_CF25D96B5EF845989F91190D6088F5FC }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_0CBDFEBAE3F0477F801FB574AF5C1BDF }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F05933CEC34F41EC8519246A896D4AEA }}
+
+      - name: Deploy to Azure Web App
+        id: deploy-to-webapp
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'backendsahan'
+          slot-name: 'Production'
+          package: .
