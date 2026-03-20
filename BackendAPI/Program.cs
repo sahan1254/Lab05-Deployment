@@ -1,17 +1,17 @@
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Define a CORS policy name
-var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+// 1. Define the CORS policy name
+var MyAllowAllOrigins = "_myAllowAllOrigins";
 
-// 2. Add CORS services
+// 2. Add CORS services to allow any frontend to connect
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy(name: MyAllowSpecificOrigins,
-                      policy  =>
+    options.AddPolicy(name: MyAllowAllOrigins,
+                      policy =>
                       {
-                          policy.WithOrigins("https://your-react-app-name.azurewebsites.net") // Replace with your actual React Azure URL
-                                .AllowAnyHeader()
-                                .AllowAnyMethod();
+                          policy.AllowAnyOrigin()   
+                                .AllowAnyHeader()   
+                                .AllowAnyMethod();  
                       });
 });
 
@@ -19,8 +19,8 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// 3. Enable CORS in the pipeline (Must be before MapGet)
-app.UseCors(MyAllowSpecificOrigins);
+// 3. Enable CORS in the pipeline - MUST be before MapGet
+app.UseCors(MyAllowAllOrigins);
 
 if (app.Environment.IsDevelopment())
 {
@@ -34,9 +34,10 @@ var summaries = new[]
     "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
 };
 
+// This is your API endpoint: https://<your-app>.azurewebsites.net/weatherforecast
 app.MapGet("/weatherforecast", () =>
 {
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
+    var forecast = Enumerable.Range(1, 5).Select(index =>
         new WeatherForecast
         (
             DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
